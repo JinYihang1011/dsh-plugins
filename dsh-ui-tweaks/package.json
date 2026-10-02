@@ -1,0 +1,46 @@
+{
+  "name": "dsh-ui-tweaks",
+  "version": "1.0.0",
+  "private": true,
+  "description": "本地界面微调插件：用自己那张样式表（外加一个很小的 DOM 监听）把第三方插件与宿主侧栏拉回一致——MCP连接器入口的图标/行度量/行距、隐藏 cron 的「运行中任务」、收起态隐藏「定时任务」克隆按钮、把左栏六个入口统一成同一行、点面板行时让「定时任务」让位。不改任何上游文件，因此上游插件更新不会把改动抹掉。",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "ui",
+    "tweaks",
+    "css",
+    "sidebar"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  }
+}

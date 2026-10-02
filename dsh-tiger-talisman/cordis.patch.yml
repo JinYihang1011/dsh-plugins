@@ -1,0 +1,8 @@
+# dsh-tiger-talisman —— bundle patch
+#
+# DSH 启动时按 bundle 层栈叠加各插件 patch，本文件把本插件插入 profile 的配置树。
+# 安装：dsh plugin --profile desktop add "link:<本目录绝对路径>"
+#      并把 "dsh-tiger-talisman" 追加到 profile package.json 的 dsh.profile.bundles。
+- insert:
+    - id: dsh-tiger-talisman
+      name: dsh-tiger-talisman

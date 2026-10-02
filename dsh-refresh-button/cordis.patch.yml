@@ -1,0 +1,5 @@
+# dsh-refresh-button —— bundle patch
+# DSH 启动时按 bundle 层栈叠加各插件 patch，本文件把插件插入 Web profile 的配置树。
+- insert:
+    - id: dsh-refresh-button
+      name: dsh-refresh-button

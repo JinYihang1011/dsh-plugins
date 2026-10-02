@@ -1,0 +1,15 @@
+# dsh-session-ops —— bundle patch
+#
+# DSH 启动时按 bundle 层栈叠加各插件 patch，本文件把本插件插入 Web profile 的配置树。
+# 安装：dsh plugin --profile desktop add "link:<本目录绝对路径>"
+#      并把 "dsh-session-ops" 追加到 profile package.json 的 dsh.profile.bundles。
+#
+# 需要改配置时，在 profile 的 cordis.patch.yml 里按 id 覆盖（同 id 后写覆盖前写）：
+#   - id: dsh-session-ops
+#     name: dsh-session-ops
+#     config:
+#       allowRelocate: false      # 只允许「cwd 已匹配」时登记，禁止跨目录搬家
+#       trashDir: "D:\\DSH回收站"  # 自定义回收站根目录
+- insert:
+    - id: dsh-session-ops
+      name: dsh-session-ops

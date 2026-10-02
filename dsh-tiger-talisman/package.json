@@ -1,0 +1,48 @@
+{
+  "name": "dsh-tiger-talisman",
+  "version": "0.1.0",
+  "private": true,
+  "description": "虎符咒：给 DSH 里共存的插件与 Skill 划领地并仲裁争用——插槽（列表型 / 独占型）、层级（z-index 秩序）、样式（谁覆盖谁、有没有被自己压掉）、重复挂载。体检只读；仲裁规则可声明、可解释、可单独关闭。",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "tiger-talisman",
+    "虎符咒",
+    "conflict",
+    "territory",
+    "audit",
+    "balance"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  }
+}

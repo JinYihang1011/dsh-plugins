@@ -1,0 +1,9 @@
+# 只发经过挑选的插件；这一条是临时探针，不进公开仓库。
+dsh-session-search/
+
+# 本机产物
+**/node_modules/
+**/.backup/
+*.log
+.DS_Store
+Thumbs.db
