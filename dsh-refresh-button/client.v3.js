@@ -8,11 +8,25 @@
  *
  * 按用户要求：**三项都不做二次确认**，点击即执行；菜单本身就是那一步确认。
  *
+ * 位置：**模型选择左边**。注册在 `conversation.input.right`
+ * （`@deepseek-ai/dsh-client-ui-conversation` 在 `conversation.composer.bar`
+ * 下声明的一个 `list` / `session` 槽位），宿主在输入卡片那一行的
+ * `standardControls` 里按顺序渲染：
+ *
+ *     <div class="standardControls">
+ *       renderSlot("conversation.input.right")   ← 本插件在这里
+ *       renderSlot("conversation.input.model")   ← 模型选择
+ *     </div>
+ *
+ * 也就是说它就是字面意义上的"模型选择左边"，与权限选择器、模型选择同高
+ * （28px）。随着 `standardControls` 一起在活动面板展开时隐藏，行为一致。
+ *
  * 两个刻意的实现选择：
  *   1. 绝对不用 window.confirm / window.alert —— 原生模态框在 Electron 下会抢走焦点，
  *      取消后不归还页面，表现为「输入框点不进去、打不了字」。失败信息改为菜单内联展示。
- *   2. 位置不依赖插槽的 `order`（实测改它无效），改用 `margin-left:auto` 把条目顶到
- *      该行最右端 —— 这是 flex 行的确定性行为。
+ *   2. 下拉面板用普通绝对定位（`bottom: 100%` + `right: 0`，向上弹出），不用 Portal：
+ *      输入卡片的祖先链上没有任何 `overflow: hidden`（`.card` 只有 `position: relative`），
+ *      面板不会被裁掉；向上弹出也和宿主自己的权限/模型菜单同向。
  */
 window.__ModuleLoader__.load({
   id: "dsh-refresh-button",
@@ -29,12 +43,15 @@ window.__ModuleLoader__.load({
     // 运行时注入的 Cordis 服务名；槽位本身由 @deepseek-ai/dsh-client-ui-conversation 提供
     const inject = ["slots"]
 
+    /** 宿主在 `conversation.composer.bar` 里声明的槽位：模型选择左边那一格。 */
+    const SLOT = "conversation.input.right"
+
     const ACTION_ROUTE = "/dsh-refresh-button/action"
 
     const C = {
       label: "var(--dsw-alias-label-secondary, #8a8f98)",
       labelStrong: "var(--dsw-alias-label-primary, #e6e6e6)",
-      hover: "var(--dsw-alias-fill-hover, rgba(128,128,128,0.14))",
+      hover: "var(--dsw-alias-interactive-bg-hover, rgba(128,128,128,0.14))",
       border: "var(--dsw-alias-border-l2, rgba(128,128,128,0.28))",
       panel: "var(--dsw-alias-bg-layer-2, #26262b)",
       error: "var(--dsw-alias-state-error-primary, #e5484d)"
@@ -44,25 +61,25 @@ window.__ModuleLoader__.load({
       position: "relative",
       display: "inline-flex",
       alignItems: "center",
-      // 不依赖插槽 order：用 auto 外边距把条目顶到该行最右端
-      marginLeft: "auto",
       flex: "none"
     }
 
+    // 与同一行上的权限选择器（28px / 13px / label-secondary / radius-sm）对齐
     const TRIGGER = {
       display: "inline-flex",
       alignItems: "center",
       gap: "4px",
-      height: "24px",
+      height: "28px",
       padding: "0 8px",
-      fontSize: "12px",
-      lineHeight: 1,
+      fontSize: "13px",
+      fontWeight: 500,
+      lineHeight: "20px",
       whiteSpace: "nowrap",
       cursor: "pointer",
       color: C.label,
       background: "transparent",
       border: "none",
-      borderRadius: "6px",
+      borderRadius: "var(--dsw-radius-sm, 6px)",
       transition: "background 120ms, color 120ms, opacity 120ms"
     }
 
@@ -225,7 +242,7 @@ window.__ModuleLoader__.load({
               if (!open) hoverOut(event)
             }
           },
-          // 入口图标用 ⏻（与菜单里「重启 DSH」同一个矢量图标，保证任何字体下都能渲染）
+          // 入口图标用「重启」那个矢量图标（不依赖字体，任何环境下都能渲染）
           h(Glyph, { paths: ICON_RESTART, size: 14 }),
           h("span", null, "界面"),
           h("span", { style: { fontSize: "9px", opacity: 0.8 } }, "▾")
@@ -260,18 +277,19 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       ctx.effect(
         () =>
-          ctx.slots.inject("conversation.composer.dock", () =>
+          ctx.slots.inject(SLOT, () =>
             ctx.slots.register(
               {
-                name: "conversation.composer.dock",
+                name: SLOT,
                 id: name,
-                order: 1000
+                order: 0
               },
               DockMenu
             )
           ),
-        "dsh-refresh-button: composer dock menu"
+        "dsh-refresh-button: composer model-seat left"
       )
+      console.info("[dsh-refresh-button] v1.0.4 → 注册在 " + SLOT + "（模型选择左边）")
     }
 
     exports.name = name

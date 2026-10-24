@@ -1,9 +1,9 @@
 {
   "name": "dsh-refresh-button",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "type": "module",
-  "description": "在 DSH 输入卡片下方加一个「界面」菜单按钮：刷新界面 / 重启 DSH / 关闭 DSH，三项都即点即执行。Windows 生产版 DSH 没有内置重载或重启入口，本插件补上。",
+  "description": "在 DSH 输入卡片「模型选择左边」加一个「界面」菜单按钮：刷新界面 / 重启 DSH / 关闭 DSH，三项都即点即执行。Windows 生产版 DSH 没有内置重载或重启入口，本插件补上。",
   "exports": {
     ".": "./index.js",
     "./client": "./client.v3.js"
