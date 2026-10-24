@@ -332,6 +332,21 @@ html[data-dsh-cron-active] [class*="sessionRow"][class*="selected"]:not(:hover),
 html[data-dsh-cron-active] [class*="searchResultRow"][class*="selected"]:not(:hover) {
 	background: transparent !important;
 }
+
+/* ⑪ dsh-cyrene-theme 的「昔涟」侧栏入口：整块隐藏。
+
+      它注册在 sidebar.footer.action 槽位（宿主渲染成 .footerActions 里的一颗
+      button.cyre-navbtn），和「导入会话」挤在同一排。同一份编辑器在设置页的
+      「昔涟 · 主题」里已经有一份，侧栏这颗只是重复入口，去掉它不影响主题、
+      表情包管理与人格设定。
+
+      只隐藏不卸载：槽位注册与 DOM 都还在，删掉这一段刷新即可恢复。
+      隐藏后不会留白条——宿主给 .footerActions 的是 flex、无固定高度、无内边距
+      （_2H3hWW_footerActions 的规则里只有 flex:none / width / justify-content），
+      子元素消失后容器自然收拢。 */
+.cyre-navbtn {
+	display: none !important;
+}
 `;
 
 		/**
