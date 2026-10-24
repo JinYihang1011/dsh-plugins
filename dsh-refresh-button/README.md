@@ -1,6 +1,6 @@
 # dsh-refresh-button
 
-给 DSH 输入卡片下方那一行（`conversation.composer.dock`）加**一个入口按钮**：图标 + 「界面」+ `▾`，
+在输入卡片那一行的**模型选择左边**加**一个入口按钮**：图标 + 「界面」+ `▾`，
 点开是下拉菜单，三项**都即点即执行（无二次确认）**：
 
 | 菜单项 | 行为 |
@@ -14,12 +14,15 @@
 1. **不要用 `window.confirm` / `window.alert`**。原生模态框在 Electron 下会抢走焦点，用户点「取消」后
    焦点不归还页面 —— 现象就是**输入框点不进去、打不了字**。所以本插件零原生弹窗：确认步骤直接去掉，
    失败信息在菜单内联显示。
-2. **插槽的 `order` 控制不了可视位置**。同一行上 `stats` 是 `order: 0`、`dsh-cost-meter` 的角标是
-   `order: 9`，本插件从 5 改到 1000 位置都不动。改用 **`margin-left: auto`** 把条目顶到行尾 ——
-   这是 flex 行的确定性行为，与插槽排序语义无关。
+2. **位置由插槽决定，不靠 `order`**。上一版挂在 `conversation.composer.dock`（输入卡片下方那一行），
+   想用 `order` 抢行尾，实测无效（同一行 `stats` 是 0、`cost-meter` 角标是 9，本插件 5→1000 都不动），
+   只能用 `margin-left: auto` 顶到最右；这一版改挂 `conversation.input.right`（见第二节），位置是
+   确定的，既不靠 `order` 也不靠外边距。
 3. **改客户端后要换文件名**。`client.js` → `client.v2.js` → `client.v3.js`，同步改
    `exports["./client"]`：URL 一变必然缓存未命中，比反复清缓存可靠（宿主虽有 `client-hmr`
    轮询推送，但浏览器那侧仍可能吃到 HTTP/Code Cache）。
+   > 注意：换文件名要**改 `package.json` 的 exports**，而浏览器清单是宿主启动时组装的 ——
+   > 只换文件名又不重启 DSH 时，页面仍会加载旧 URL。只改文件内容则刷新页面即可。
 4. **宿主侧 `spawn` 绝对不要带 `detached: true`**（Windows 独有坑）：detached 会用
    `DETACHED_PROCESS` 起进程，**PowerShell 5.1 在这种没有控制台的环境下会立刻退出
    （exit 0，约 120ms），脚本一行都不执行** —— 现象正是"点了按钮只显示正在…、什么都没发生"。
@@ -51,28 +54,48 @@ Windows 生产版 DSH **没有任何内置的重载/重启入口**：
 
 唯一的手工办法是 `F12` → Console → `location.reload()`，而重启只能去托盘退出再启动。
 
-## 二、这一行上有谁，以及为什么最终不靠 `order` 定位
+## 二、为什么挂在 `conversation.input.right`（= 模型选择左边）
 
-`conversation.composer.dock` 的契约（asar 内 slots 声明）：
+`@deepseek-ai/dsh-client-ui-conversation` 在 `conversation.composer.bar`
+（`kind: "single"`, `scope: "session-maybe"`）的 **children 表**里声明了输入卡片那一行的插槽，
+其中与本插件相关的是：
 
-```
-kind: "list", scope: "session", summary: "Ambient entries below the composer card."
-registerOptions.order = "Position among the entries, ascending (default 0)"
-```
-
-同一行上已占位的条目：
-
-| id | order | 来源 |
+| 槽位 | kind / scope | 渲染位置（`InputBar` 里） |
 | --- | --- | --- |
-| `stats` | 0 | 宿主 `dsh-client-ui-chat`（「9 轮 238 步 · 缓存命中 99.8%」那部分） |
-| `cost-meter` | 5 | `dsh-cost-meter` |
-| `cost-meter-corner` | 9 | `dsh-cost-meter`（那个百分比圆环） |
-| `dsh-refresh-button` | 1000 | 本插件（**保留这个值，但定位不依赖它**） |
+| `conversation.input.permission` | single / session | 左组 `modes`，权限选择器 |
+| `conversation.input.left` | list / session | 左组末尾（`dsh-client-auto-continue` 的「自动继续」在这里） |
+| **`conversation.input.right`** | **list / session** | **右组 `standardControls` 的第一个** |
+| `conversation.input.model` | single / session | `standardControls` 的第二个，紧跟 `input.right` |
+| `conversation.input.activity` | single / session | `standardControls` 之后（活动面板） |
+| `conversation.composer.dock` | list / session | 输入卡片**下方**那一行（上一版所在处） |
 
-按契约文档，`order` 应当决定位置；但**实测把本插件的 order 从 5 改到 1000，可视位置完全不动**
-（条目始终夹在 `cost-meter` 与 `cost-meter-corner` 之间）。因此最终改为在该条目的外层
-`span` 上写 **`margin-left: auto`** —— flex 行里这会把条目连同其后的元素推到行尾，
-是确定性的布局行为，与插槽排序语义无关。
+宿主源码里的顺序就是契约：
+
+```jsx
+<div className={standardControls}>
+  {renderSlot("conversation.input.right", {})}   {/* ← 本插件 */}
+  {renderSlot("conversation.input.model", {...})} {/* ← 模型选择 */}
+</div>
+```
+
+所以"模型选择左边"不是用 CSS 猜出来的位置，而是这个槽位字面上的含义。登记方式：
+
+```js
+ctx.slots.inject("conversation.input.right", () =>
+  ctx.slots.register({ name: "conversation.input.right", id: "dsh-refresh-button", order: 0 }, DockMenu)
+)
+```
+
+**注意**：`register` 对未声明的槽位会直接抛
+`slot "..." is not declared (a parent entry's children table must declare it)` ——
+换槽位前先确认目标槽位出现在宿主某个 entry 的 children 表里。
+
+外观上刻意与同一行对齐：高 28px、字号 13px、`--dsw-alias-label-secondary`、
+`--dsw-radius-sm`、hover 用 `--dsw-alias-interactive-bg-hover`，与权限选择器、模型选择一致。
+面板向上弹（`bottom: 100%` + `right: 0`），与宿主自己的权限/模型菜单同向；输入卡片
+祖先链上没有 `overflow: hidden`，所以不需要 Portal。
+
+它随 `standardControls` 一起在工作流活动面板展开时隐藏 —— 与模型选择的行为一致。
 
 ## 三、安装 / 更新
 
@@ -84,14 +107,16 @@ pwsh -File install.ps1                 # 装进 desktop profile（默认）
 避免 pnpm `link:` 规格的引号问题）→ 定位 `dsh` CLI → 若 profile 未登记则
 `dsh plugin --profile desktop add "link:<目录>"`。
 
-**重启 DSH 后生效**：客户端半边会随页面加载，但宿主半边的重启路由只在启动时挂载。
+**重启 DSH 后生效**（首次安装）：客户端半边会随页面加载，但宿主半边的重启路由只在启动时挂载。
+已经装好的情况下只改客户端：**刷新页面**即可（入口就是本插件的「刷新界面」）。
 
 ## 四、更新客户端时怎么绕开缓存
 
 客户端 bundle 由 `client-hmr` 每 500ms 轮询并推送，但浏览器可能仍吃 Chromium 的
-HTTP/Code Cache。本插件把客户端入口从 `client.js` 换成 **`client.v2.js`**
-（`exports["./client"]` 相应改写），URL 变化即必然缓存未命中 —— 这是最省事的规避方式。
-以后再改客户端，继续递增文件名（`client.v3.js`）比反复清缓存可靠。
+HTTP/Code Cache。增加新版本时把客户端入口递增文件名（`client.v4.js`），同步改
+`exports["./client"]` —— URL 变化即必然缓存未命中。只改内容不改名时，刷新页面通常就够；
+若改动没生效，先看 DevTools Console 里本插件打的那行
+`[dsh-refresh-button] v1.0.4 → 注册在 conversation.input.right`。
 
 ## 五、安全边界
 
@@ -109,9 +134,10 @@ HTTP/Code Cache。本插件把客户端入口从 `client.js` 换成 **`client.v2
 ```
 dsh-refresh-button/
 ├─ index.js           宿主半边：Web 路由 + 脱离进程的重启脚本
-├─ client.v2.js       客户端半边：两个按钮（含 window.confirm 二次确认）
+├─ client.v3.js       客户端半边：「界面」菜单（刷新界面 / 重启 DSH / 关闭 DSH）
 ├─ cordis.patch.yml   bundle 挂载声明
-├─ package.json       dsh.client.platform = web，exports["./client"] -> client.v2.js
+├─ package.json       dsh.client.platform = web，exports["./client"] -> client.v3.js
 ├─ install.ps1        同步 + link 登记
+├─ restart.ps1        （宿主踢的那个重启脚本）
 └─ README.md
 ```
